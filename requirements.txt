@@ -1,0 +1,17 @@
+click
+Sphinx
+coverage
+flake8
+pandas
+numpy
+pathlib
+scikit-learn
+imbalanced-learn
+joblib
+fastapi
+uvicorn
+prometheus_client
+pydantic
+mlflow>=2.0
+pytest
+evidently
