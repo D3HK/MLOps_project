@@ -15,3 +15,7 @@ pydantic
 mlflow>=2.0
 pytest
 evidently
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+python-dotenv
