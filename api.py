@@ -43,16 +43,6 @@ async def login(
     raise HTTPException(status_code=400, detail="Wrong login/password")
 
 
-@app.get("/secure-data")
-async def secure_data(user: dict = Depends(get_current_user)):
-    return {"data": "secret", "user": user}
-
-
-@app.post("/admin/update-model")
-async def update_model(user: dict = Depends(get_admin_user)):
-    return {"message": "Модель обновлена"}
-
-
 class PredictionRequest(BaseModel):
     features: List[float]
 
