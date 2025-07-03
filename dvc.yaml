@@ -1,0 +1,30 @@
+stages:
+  import_data:
+    cmd: python src/data/import_raw_data.py
+    outs:
+      - data/raw/
+    deps:
+      - src/data/import_raw_data.py
+
+  preprocess:
+    cmd: python src/data/make_dataset.py ./data/raw ./data/preprocessed
+    deps:
+      - src/data/make_dataset.py
+      - data/raw/
+    outs:
+      - data/preprocessed/
+
+  train:
+    cmd: python src/models/train_model.py
+    deps:
+      - src/models/train_model.py
+      - data/preprocessed/
+    outs:
+      - src/models/trained_model.joblib
+
+  predict:
+    cmd: python src/models/predict_model.py src/models/test_features.json
+    deps:
+      - src/models/predict_model.py
+      - src/models/trained_model.joblib
+      - src/models/test_features.json
