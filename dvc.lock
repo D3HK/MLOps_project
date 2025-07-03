@@ -23,14 +23,17 @@ stages:
       nfiles: 4
     - path: src/data/make_dataset.py
       hash: md5
-      md5: 454c8d69412bbafc1aebaaa3ac0969ea
-      size: 7391
+      md5: 1ea8ee18a30edcae9dbae346d595ab5c
+      size: 7332
     outs:
-    - path: data/preprocessed/
+    - path: data/preprocessed/X_test.csv
       hash: md5
-      md5: 0c433cc82dba9ff035875141d9ab045c.dir
-      size: 5882431
-      nfiles: 4
+      md5: c1b03c9a3067568f40864c4cb53aabff
+      size: 1731987
+    - path: data/preprocessed/y_test.csv
+      hash: md5
+      md5: 241f10d03ab238bf3148ffbf0bff5eaf
+      size: 32825
   train:
     cmd: python src/models/train_model.py
     deps:
@@ -46,8 +49,8 @@ stages:
     outs:
     - path: src/models/trained_model.joblib
       hash: md5
-      md5: 21c1a8baf559f67cafdf6bdc38401368
-      size: 107100009
+      md5: b4107896af829f6153278a9df7ab47f3
+      size: 107279369
   predict:
     cmd: python src/models/predict_model.py src/models/test_features.json
     deps:
@@ -55,11 +58,31 @@ stages:
       hash: md5
       md5: 0865c14ab86190b860ea5b7434b2b993
       size: 984
+    - path: src/models/prod_model.joblib
+      hash: md5
+      md5: a09b8ea0a41af0e9ae40ead19f204846
+      size: 107032809
     - path: src/models/test_features.json
       hash: md5
       md5: da7449d023f76bc18381d56e16f7737f
       size: 374
+  evaluate:
+    cmd: python src/models/evaluate_model.py
+    deps:
+    - path: data/preprocessed/X_test.csv
+      hash: md5
+      md5: c1b03c9a3067568f40864c4cb53aabff
+      size: 1731987
+    - path: data/preprocessed/y_test.csv
+      hash: md5
+      md5: 241f10d03ab238bf3148ffbf0bff5eaf
+      size: 32825
     - path: src/models/trained_model.joblib
       hash: md5
-      md5: 21c1a8baf559f67cafdf6bdc38401368
-      size: 107100009
+      md5: b4107896af829f6153278a9df7ab47f3
+      size: 107279369
+    outs:
+    - path: src/models/prod_model.joblib
+      hash: md5
+      md5: b4107896af829f6153278a9df7ab47f3
+      size: 107279369

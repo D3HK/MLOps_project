@@ -59,3 +59,44 @@ async def predict(
         return {"prediction": prediction.tolist()[0]}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
+    
+
+from fastapi import BackgroundTasks
+import subprocess
+import logging
+
+# Настройка логгирования
+logging.basicConfig(filename='retrain.log', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@app.post("/retrain", status_code=202)
+async def retrain_model(
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(get_admin_user)
+):
+    """
+    Starts the model retraining process in the background. 
+    Requires admin.
+    """
+    def run_retraining():
+        try:
+            logger.info("Starting model retraining...")
+            result = subprocess.run(
+                ["./retraining_run.sh"],
+                cwd=os.path.dirname(os.path.abspath(__file__)),
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                logger.info("Retraining completed successfully")
+            else:
+                logger.error(f"Retraining failed: {result.stderr}")
+        except Exception as e:
+            logger.error(f"Retraining error: {str(e)}")
+
+    background_tasks.add_task(run_retraining)
+    
+    return {
+        "message": "Retraining process started in background",
+        "status": "accepted"
+    }

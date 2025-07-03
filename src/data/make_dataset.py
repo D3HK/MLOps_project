@@ -8,38 +8,52 @@ from sklearn.model_selection import train_test_split
 from check_structure import check_existing_file, check_existing_folder
 import os
 
-@click.command()
-@click.argument('input_filepath', type=click.Path(exists=False), required=0)
-@click.argument('output_filepath', type=click.Path(exists=False), required=0)
+logger = logging.getLogger(__name__)
 
-def main(input_filepath, output_filepath):
+@click.command()
+@click.argument('input_filepath', type=click.Path(exists=False), required=False)
+@click.argument('output_filepath', type=click.Path(exists=False), required=False)
+def main(input_filepath=None, output_filepath=None):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../preprocessed).
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
 
-    # Prompt the user for input file paths
-    input_filepath= click.prompt('Enter the file path for the input data', type=click.Path(exists=True))
+    # Автоматические пути по умолчанию
+    default_input = "./data/raw"
+    default_output = "./data/preprocessed"
+    
+    # Если пути не переданы как аргументы
+    if input_filepath is None:
+        input_filepath = default_input
+    if output_filepath is None:
+        output_filepath = default_output
+    
+    # Создаем папки, если нужно
+    os.makedirs(input_filepath, exist_ok=True)
+    os.makedirs(output_filepath, exist_ok=True)
+
+    # Формируем полные пути к файлам
     input_filepath_users = os.path.join(input_filepath, "usagers-2021.csv")
     input_filepath_caract = os.path.join(input_filepath, "caracteristiques-2021.csv")
     input_filepath_places = os.path.join(input_filepath, "lieux-2021.csv")
     input_filepath_veh = os.path.join(input_filepath, "vehicules-2021.csv")
-    output_filepath = click.prompt('Enter the file path for the output preprocessed data (e.g., output/preprocessed_data.csv)', type=click.Path())
-    
-    # Call the main data processing function with the provided file paths
+
+    # Call the main data processing function
     process_data(input_filepath_users, input_filepath_caract, input_filepath_places, input_filepath_veh, output_filepath)
 
 def process_data(input_filepath_users, input_filepath_caract, input_filepath_places, input_filepath_veh, output_folderpath):
- 
+    # Автоматическое создание выходной папки
+    os.makedirs(output_folderpath, exist_ok=True)
+    
     #--Importing dataset
     df_users = pd.read_csv(input_filepath_users, sep=";")
     df_caract = pd.read_csv(input_filepath_caract, sep=";", header=0, low_memory=False)
     df_places = pd.read_csv(input_filepath_places, sep = ";", encoding='utf-8')
     df_veh = pd.read_csv(input_filepath_veh, sep=";")
 
-
-        #--Creating new columns
+    #--Creating new columns
     nb_victim = pd.crosstab(df_users.Num_Acc, "count").reset_index()
     nb_vehicules = pd.crosstab(df_veh.Num_Acc, "count").reset_index()
     df_users["year_acc"] = df_users["Num_Acc"].astype(str).apply(lambda x : x[:4]).astype(int)
@@ -52,7 +66,7 @@ def process_data(input_filepath_users, input_filepath_caract, input_filepath_pla
     df_users.drop(['an_nais'], inplace=True, axis=1)
 
     #--Replacing names 
-    df_users.grav.replace([1,2,3,4], [1,3,4,2], inplace = True)
+    df_users['grav'] = df_users['grav'].replace({1:1, 2:3, 3:4, 4:2})
     df_caract.rename({"agg" : "agg_"},  inplace = True, axis = 1)
     corse_replace = {"2A":"201", "2B":"202"}
     df_caract["dep"] = df_caract["dep"].str.replace("2A", "201")
@@ -68,13 +82,12 @@ def process_data(input_filepath_users, input_filepath_caract, input_filepath_pla
     df_caract["long"] = df_caract["long"].str.replace(',', '.')
     df_caract = df_caract.astype(dico_to_float)
 
-
     #--Grouping modalities 
     dico = {1:0, 2:1, 3:1, 4:1, 5:1, 6:1,7:1, 8:0, 9:0}
     df_caract["atm"] = df_caract["atm"].replace(dico)
     catv_value = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,30,31,32,33,34,35,36,37,38,39,40,41,42,43,50,60,80,99]
     catv_value_new = [0,1,1,2,1,1,6,2,5,5,5,5,5,4,4,4,4,4,3,3,4,4,1,1,1,1,1,6,6,3,3,3,3,1,1,1,1,1,0,0]
-    df_veh['catv'].replace(catv_value, catv_value_new, inplace = True)
+    df_veh['catv'] = df_veh['catv'].replace(dict(zip(catv_value, catv_value_new)))
 
     #--Merging datasets 
     fusion1= df_users.merge(df_veh, on = ["Num_Acc","num_veh", "id_vehicule"], how="inner")
@@ -90,15 +103,13 @@ def process_data(input_filepath_users, input_filepath_caract, input_filepath_pla
     df.rename({"count" :"nb_vehicules"},axis = 1, inplace = True)
 
     #--Modification of the target variable  : 1 : prioritary // 0 : non-prioritary
-    df['grav'].replace([2,3,4], [0,1,1], inplace=True)
-
+    df['grav'] = df['grav'].replace({2:0, 3:1, 4:1})
 
     #--Replacing values -1 and 0 
     col_to_replace0_na = [ "trajet", "catv", "motor"]
     col_to_replace1_na = [ "trajet", "secu1", "catv", "obsm", "motor", "circ", "surf", "situ", "vma", "atm", "col"]
     df[col_to_replace1_na] = df[col_to_replace1_na].replace(-1, np.nan)
     df[col_to_replace0_na] = df[col_to_replace0_na].replace(0, np.nan)
-
 
     #--Dropping columns 
     list_to_drop = ['senc','larrout','actp', 'manv', 'choc', 'nbv', 'prof', 'plan', 'Num_Acc', 'id_vehicule', 'num_veh', 'pr', 'pr1','voie', 'trajet',"secu2", "secu3",'adr', 'v1', 'lartpc','occutc','v2','vosp','locp','etatp', 'infra', 'obs' ]
@@ -124,10 +135,13 @@ def process_data(input_filepath_users, input_filepath_caract, input_filepath_pla
         os.makedirs(output_folderpath)
 
     #--Saving the dataframes to their respective output file paths
+    logger.info(f'Saving preprocessed data to {output_folderpath}')
     for file, filename in zip([X_train, X_test, y_train, y_test], ['X_train', 'X_test', 'y_train', 'y_test']):
         output_filepath = os.path.join(output_folderpath, f'{filename}.csv')
-        if check_existing_file(output_filepath):
-            file.to_csv(output_filepath, index=False)
+        file.to_csv(output_filepath, index=False)
+        logger.debug(f'Saved {filename}.csv with shape {file.shape}') 
+
+    logger.info(f'Successfully saved all preprocessed data to {output_folderpath}')
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
