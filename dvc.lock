@@ -60,8 +60,8 @@ stages:
       size: 984
     - path: src/models/prod_model.joblib
       hash: md5
-      md5: a09b8ea0a41af0e9ae40ead19f204846
-      size: 107032809
+      md5: b4107896af829f6153278a9df7ab47f3
+      size: 107279369
     - path: src/models/test_features.json
       hash: md5
       md5: da7449d023f76bc18381d56e16f7737f

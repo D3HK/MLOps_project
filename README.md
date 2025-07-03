@@ -82,9 +82,13 @@ dvc.yaml
 ```yaml
 # dvc.yaml
 evaluate:
-  cmd: python evaluate_model.py
-  deps: [trained_model.joblib, X_test.csv, y_test.csv]
-  outs: [prod_model.joblib]  # Auto-updated
+    cmd: python src/models/evaluate_model.py
+    deps:
+      - src/models/trained_model.joblib
+      - data/preprocessed/X_test.csv
+      - data/preprocessed/y_test.csv
+    outs:
+      - src/models/prod_model.joblib # Auto-updated
 ```  
 
 ### **Security**  

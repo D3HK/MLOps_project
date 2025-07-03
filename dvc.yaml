@@ -30,11 +30,11 @@ stages:
       - data/preprocessed/X_test.csv
       - data/preprocessed/y_test.csv
     outs:
-      - src/models/prod_model.joblib  # создаётся/обновляется при улучшении модели
+      - src/models/prod_model.joblib
 
   predict:
     cmd: python src/models/predict_model.py src/models/test_features.json
     deps:
       - src/models/predict_model.py
-      - src/models/prod_model.joblib  # используем продакшен-модель
+      - src/models/prod_model.joblib
       - src/models/test_features.json
