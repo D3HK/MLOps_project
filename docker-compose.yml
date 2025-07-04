@@ -3,7 +3,8 @@ services:
     build: .
     ports:
       - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      - SECRET_KEY=${SECRET_KEY}
+    volumes:
+      - ./data:/app/data
+      - ./src/models:/app/src/models
+      - ./.dvc:/app/.dvc
+      
