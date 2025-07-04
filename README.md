@@ -110,3 +110,32 @@ evaluate:
 curl -X POST "http://localhost:8000/retrain" \
      -H "Authorization: Bearer $TOKEN"
 ```
+
+---
+
+### **DVC Pipeline Dockerization**  
+
+**What I did**:  
+✅ Integrated DVC into Docker containers  
+✅ Configured `docker-compose.yml` for DVC + API interaction  
+✅ Set up volumes for data/model synchronization  
+✅ Added API endpoint (`/retrain`) to trigger DVC pipeline  
+✅ Verified full pipeline execution inside containers  
+
+**How to test**:  
+1. Start services:  
+   ```bash  
+   docker compose up -d  
+   ```  
+2. Check DVC status:  
+   ```bash  
+   docker compose exec api bash -c "cd /app && dvc status"  
+   ```  
+3. Trigger retraining via API:  
+   ```bash  
+   curl -X POST http://localhost:8000/retrain -H "Authorization: Bearer TOKEN"  
+   ```  
+
+**Key files modified**:  
+- `docker-compose.yml` (DVC service + volumes)  
+- `Dockerfile` (DVC installation)    
