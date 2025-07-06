@@ -3,6 +3,11 @@ import shutil
 import joblib
 import pandas as pd
 from sklearn.metrics import roc_auc_score
+import mlflow
+
+
+mlflow.set_tracking_uri("http://localhost:5000")
+
 
 def load_data():
     """Загрузка X_test и y_test без предположений о названии колонки."""
@@ -32,6 +37,14 @@ def main():
         print(f"Prod-модель обновлена (AUC: {prod_auc:.3f} -> {new_auc:.3f})")
     else:
         print(f"Текущая модель лучше (AUC: {prod_auc:.3f} vs {new_auc:.3f})")
+    
+
+    with mlflow.start_run():
+        mlflow.log_metrics({
+            "new_model_auc": new_auc,
+            "prod_model_auc": prod_auc
+        })
+        print("Метрики сравнения залогированы в MLflow")
 
 if __name__ == "__main__":
     main()

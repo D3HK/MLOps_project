@@ -7,4 +7,14 @@ services:
       - ./data:/app/data
       - ./src/models:/app/src/models
       - ./.dvc:/app/.dvc
-      
+    depends_on:
+      - mlflow
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow 
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns
