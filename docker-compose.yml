@@ -1,20 +1,26 @@
 services:
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns 
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    restart: unless-stopped
+
   api:
     build: .
     ports:
       - "8000:8000"
     volumes:
       - ./data:/app/data
-      - ./src/models:/app/src/models
-      - ./.dvc:/app/.dvc
+      - ./src/models:/app/src/models 
+      - ./.dvc:/app/.dvc 
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     depends_on:
       - mlflow
-
-  mlflow:
-    build:
-      context: .
-      dockerfile: Dockerfile.mlflow 
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./mlruns:/mlruns
+    restart: unless-stopped

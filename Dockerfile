@@ -1,13 +1,25 @@
-FROM python:3.9-slim
+# Этап сборки зависимостей
+FROM python:3.9-slim as builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --user -r requirements.txt
 
-COPY retraining_run.sh /app/
-RUN chmod +x /app/retraining_run.sh
+# Финальный образ
+FROM python:3.9-slim
 
+# Установка curl и зависимостей
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
 COPY . .
+RUN pip install --no-cache-dir -r requirements.txt \
+    && chmod +x startup.sh retraining_run.sh
 
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./startup.sh"]

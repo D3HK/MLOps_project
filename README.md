@@ -139,3 +139,29 @@ curl -X POST "http://localhost:8000/retrain" \
 **Key files modified**:  
 - `docker-compose.yml` (DVC service + volumes)  
 - `Dockerfile` (DVC installation)    
+
+---
+
+Here's the concise addition to your README focusing on MLflow setup and Dockerization:
+
+---
+
+## **MLflow Tracking & Dockerization**
+
+### **MLflow Configuration**
+- Tracks all experiments automatically in `./mlruns/`
+- Logs:
+  - Model parameters
+  - Evaluation metrics (AUC)
+  - Model artifacts (`.joblib` files)
+- Access UI at: `http://localhost:5000`
+
+
+### **Test Commands**
+```bash
+# Start MLflow only
+docker compose up -d mlflow
+
+# Trigger training (logs to MLflow)
+docker compose run api dvc repro --force evaluate
+```
