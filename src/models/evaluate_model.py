@@ -18,7 +18,7 @@ def load_data():
 def main():
     if not os.path.exists("src/models/prod_model.joblib"):
         shutil.copy("src/models/trained_model.joblib", "src/models/prod_model.joblib")
-        print("Prod-модель создана (первая версия)")
+        print("Prod-model created (first version)")
         return
 
     X_test, y_test = load_data()
@@ -31,9 +31,9 @@ def main():
     # Обновление prod-модели при улучшении (порог +1%)
     if new_auc > prod_auc + 0.01:
         shutil.copy("src/models/trained_model.joblib", "src/models/prod_model.joblib")
-        print(f"Prod-модель обновлена (AUC: {prod_auc:.3f} -> {new_auc:.3f})")
+        print(f"Prod-model updated (AUC: {prod_auc:.3f} -> {new_auc:.3f})")
     else:
-        print(f"Текущая модель лучше (AUC: {prod_auc:.3f} vs {new_auc:.3f})")
+        print(f"Current model is better (AUC: {prod_auc:.3f} vs {new_auc:.3f})")
     
 
     with mlflow.start_run():
@@ -41,7 +41,7 @@ def main():
             "new_model_auc": new_auc,
             "prod_model_auc": prod_auc
         })
-        print("Метрики сравнения залогированы в MLflow")
+        print("Comparison metrics are logged into MLflow")
 
 if __name__ == "__main__":
     main()
