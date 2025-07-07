@@ -1,5 +1,14 @@
 #!/bin/bash
-set -e  # Остановиться при ошибке
-cd /app  # Жёстко задаём путь внутри контейнера
-dvc repro evaluate  # Запускаем конкретную стадию пайплайна
-echo "[$(date)] Retraining completed successfully" >> /app/retrain.log
+set -e
+
+PROJECT_ROOT="/Users/Denis/Desktop/PROJECT/MLOps_accidents"  
+cd "$PROJECT_ROOT" || { echo "Ошибка перехода в $PROJECT_ROOT"; exit 1; }
+
+if [ ! -d .dvc ]; then
+    echo "ERROR: .dvc directory not found!" >&2
+    exit 1
+fi
+
+dvc repro evaluate --force
+
+echo "[$(date)] Retraining completed" >> "$PROJECT_ROOT/retrain.log"

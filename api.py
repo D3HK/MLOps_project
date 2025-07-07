@@ -1,3 +1,4 @@
+import mlflow
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List 
@@ -17,6 +18,10 @@ from auth.dependencies import get_admin_user
 from auth.utils import create_access_token
 
 from fastapi import Form
+
+
+mlflow.set_tracking_uri("sqlite:///mlruns.db")
+mlflow.set_registry_uri("sqlite:///mlruns.db")
 
 
 # app = FastAPI()
@@ -46,7 +51,15 @@ async def login(
 class PredictionRequest(BaseModel):
     features: List[float]
 
-model = joblib.load(os.path.join("src", "models", "trained_model.joblib"))
+# Добавьте проверку перед загрузкой
+from mlflow.exceptions import MlflowException
+
+try:
+    model = mlflow.pyfunc.load_model("models:/Accidents_RF_Model@Champion")
+except MlflowException:
+    # Fallback на локальную модель
+    model = joblib.load("src/models/prod_model.joblib")
+    print("Warning: Using local model instead of MLflow Registry")
 
 @app.post("/predict")
 async def predict(

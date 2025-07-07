@@ -4,6 +4,7 @@ import joblib
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 import mlflow
+from mlflow import MlflowClient
 
 
 mlflow.set_tracking_uri("http://localhost:5000")
@@ -28,20 +29,23 @@ def main():
     new_auc = roc_auc_score(y_test, new_model.predict_proba(X_test)[:, 1])
     prod_auc = roc_auc_score(y_test, prod_model.predict_proba(X_test)[:, 1])
 
+    client = MlflowClient()
+
     # Обновление prod-модели при улучшении (порог +1%)
     if new_auc > prod_auc + 0.01:
-        shutil.copy("src/models/trained_model.joblib", "src/models/prod_model.joblib")
-        print(f"Prod-model updated (AUC: {prod_auc:.3f} -> {new_auc:.3f})")
+        new_version = client.search_model_versions(
+            f"run_id='{mlflow.active_run().info.run_id}'"
+        )[0].version
+        
+        # Обновляем алиас Champion
+        client.set_registered_model_alias(
+            name="Accidents_RF_Model",
+            alias="Champion",
+            version=new_version
+        )
+
     else:
         print(f"Current model is better (AUC: {prod_auc:.3f} vs {new_auc:.3f})")
-    
-
-    with mlflow.start_run():
-        mlflow.log_metrics({
-            "new_model_auc": new_auc,
-            "prod_model_auc": prod_auc
-        })
-        print("Comparison metrics are logged into MLflow")
 
 if __name__ == "__main__":
     main()
