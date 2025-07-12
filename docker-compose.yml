@@ -14,6 +14,7 @@ services:
       - "5000:5000"
     volumes:
       - ./mlruns:/mlflow:rw
+    env_file: .env
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     restart: unless-stopped
@@ -28,6 +29,7 @@ services:
       - ./.dvc:/app/.dvc:rw
       - ./.dvc/cache:/app/.dvc/cache:rw
       - ./mlruns:/mlflow:rw
+    env_file: .env
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     depends_on:

@@ -25,7 +25,6 @@ COPY data/preprocessed/ data/preprocessed/
 COPY dvc.yaml .
 COPY auth/ auth/
 COPY database.py .
-COPY .env .env
 RUN apt-get update && apt-get install -y curl
 
 RUN apt-get update && \
