@@ -16,10 +16,13 @@ stages:
       - data/preprocessed/y_test.csv
 
   train:
-    cmd: MLFLOW_TRACKING_URI=http://mlflow:5000 MLFLOW_EXPERIMENT_NAME=Accidents_Prediction python src/models/train_model.py
+    cmd: python src/models/train_model.py
     deps:
       - src/models/train_model.py
-      - data/preprocessed
+      - data/preprocessed/X_train.csv
+      - data/preprocessed/X_test.csv
+      - data/preprocessed/y_train.csv
+      - data/preprocessed/y_test.csv
     outs:
       - src/models/trained_model.joblib
 

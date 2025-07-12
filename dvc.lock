@@ -28,29 +28,31 @@ stages:
     outs:
     - path: data/preprocessed/X_test.csv
       hash: md5
-      md5: c1b03c9a3067568f40864c4cb53aabff
-      size: 1731987
+      md5: 984b7f6c56e32ae00e0533e1f3fd6e59
+      size: 1732263
     - path: data/preprocessed/y_test.csv
       hash: md5
-      md5: 241f10d03ab238bf3148ffbf0bff5eaf
+      md5: 83061f3f8b1b8fcaf00638d1c89fae7d
       size: 32825
   train:
-    cmd: python src/models/train_model.py
+    cmd: MLFLOW_TRACKING_URI=http://mlflow:5000 
+      MLFLOW_EXPERIMENT_NAME=Accidents_Prediction python 
+      src/models/train_model.py
     deps:
-    - path: data/preprocessed/
+    - path: data/preprocessed
       hash: md5
-      md5: 0c433cc82dba9ff035875141d9ab045c.dir
-      size: 5882431
+      md5: 34b7b7a80c1b5d66d86e05a7978b83e9.dir
+      size: 5882269
       nfiles: 4
     - path: src/models/train_model.py
       hash: md5
-      md5: ad537e15a4c17968ff74e75eb6527f95
-      size: 2154
+      md5: 098cf99b1b6abcb546f335f22010e6cd
+      size: 2725
     outs:
     - path: src/models/trained_model.joblib
       hash: md5
-      md5: 55608a773934b880f5851b126f86a8cf
-      size: 107321449
+      md5: 865b3496eed44020c89189c4db0b0bad
+      size: 106824009
   predict:
     cmd: python src/models/predict_model.py src/models/test_features.json
     deps:
@@ -60,8 +62,8 @@ stages:
       size: 984
     - path: src/models/prod_model.joblib
       hash: md5
-      md5: 55608a773934b880f5851b126f86a8cf
-      size: 107321449
+      md5: 865b3496eed44020c89189c4db0b0bad
+      size: 106824009
     - path: src/models/test_features.json
       hash: md5
       md5: da7449d023f76bc18381d56e16f7737f
@@ -71,18 +73,18 @@ stages:
     deps:
     - path: data/preprocessed/X_test.csv
       hash: md5
-      md5: c1b03c9a3067568f40864c4cb53aabff
-      size: 1731987
+      md5: 984b7f6c56e32ae00e0533e1f3fd6e59
+      size: 1732263
     - path: data/preprocessed/y_test.csv
       hash: md5
-      md5: 241f10d03ab238bf3148ffbf0bff5eaf
+      md5: 83061f3f8b1b8fcaf00638d1c89fae7d
       size: 32825
     - path: src/models/trained_model.joblib
       hash: md5
-      md5: 55608a773934b880f5851b126f86a8cf
-      size: 107321449
+      md5: 865b3496eed44020c89189c4db0b0bad
+      size: 106824009
     outs:
     - path: src/models/prod_model.joblib
       hash: md5
-      md5: 55608a773934b880f5851b126f86a8cf
-      size: 107321449
+      md5: 865b3496eed44020c89189c4db0b0bad
+      size: 106824009

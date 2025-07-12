@@ -1,102 +1,128 @@
-from fastapi import FastAPI, HTTPException
+import mlflow
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Form
 from pydantic import BaseModel
 from typing import List 
 import joblib
 import os
 import numpy as np
+import subprocess
+import logging
 from dotenv import load_dotenv
+from fastapi.security import OAuth2PasswordBearer
+from auth.dependencies import get_current_user, get_admin_user
+from auth.models import Token
+from auth.utils import create_access_token
+from mlflow.exceptions import MlflowException
+from src.models.train_model import retrain
+
 load_dotenv()
 
-from fastapi import FastAPI, Depends
-from auth.dependencies import get_current_user
-from auth.models import Token
+app = FastAPI(
+    title="Accidents Prediction API",
+    description="API for predicting accidents and managing models",
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1}
+)
 
-from auth.utils import get_user, verify_password
-from auth.dependencies import get_admin_user
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
+mlflow.set_registry_uri(os.getenv("MLFLOW_REGISTRY_URI", "http://mlflow:5000"))
 
-from auth.utils import create_access_token
-
-from fastapi import Form
-
-
-# app = FastAPI()
-
-
-from fastapi.security import OAuth2PasswordBearer
+# Authentication setup
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
-app = FastAPI(swagger_ui_parameters={"defaultModelsExpandDepth": -1})
+
+# Logging setup
+logging.basicConfig(filename='retrain.log', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load the model at startup
+def load_model():
+    try:
+        # Try to load from MLflow Registry
+        return mlflow.pyfunc.load_model("models:/Accidents_RF_Model@champion")
+    except MlflowException as e:
+        logger.warning(f"MLflow model loading failed: {str(e)}")
+        try:
+            # Fallback to local model
+            model_path = os.path.join(os.path.dirname(__file__), "src/models/prod_model.joblib")
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Model file not found at {model_path}")
+            return joblib.load(model_path)
+        except Exception as e:
+            logger.error(f"Local model loading failed: {str(e)}")
+            raise
+
+# Global model variable (can be replaced by cache or dependency)
+try:
+    model = load_model()
+except Exception as e:
+    logger.critical(f"Failed to load model: {str(e)}")
+    model = None
+
+# Model for prediction query
+class PredictionRequest(BaseModel):
+    features: List[float]
 
 
 @app.get("/")
 def read_root():
-    return {"status": "API is working"}
-
+    return {"status": "API is working", "model_loaded": model is not None}
 
 @app.post("/auth/token", response_model=Token)
 async def login(
     username: str = Form(...), 
     password: str = Form(...)
 ):
+    """Generate access token for authenticated users"""
     if username == "admin" and password == "admin123":
         token = create_access_token({"sub": "admin", "role": "admin"})
         return {"access_token": token, "token_type": "bearer"}
     raise HTTPException(status_code=400, detail="Wrong login/password")
 
 
-class PredictionRequest(BaseModel):
-    features: List[float]
-
-model = joblib.load(os.path.join("src", "models", "trained_model.joblib"))
-
 @app.post("/predict")
 async def predict(
     request: PredictionRequest,
-    user: dict = Depends(get_admin_user)  # Добавляем проверку
-):
+    user: dict = Depends(get_admin_user)
+    ):
+    """Make predictions using the trained model"""
+    if model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
     try:
         features = np.array(request.features).reshape(1, -1)
         prediction = model.predict(features)
         return {"prediction": prediction.tolist()[0]}
     except Exception as e:
+        logger.error(f"Prediction error: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
-    
 
-from fastapi import BackgroundTasks
-import subprocess
-import logging
-
-# Настройка логгирования
-logging.basicConfig(filename='retrain.log', level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 @app.post("/retrain", status_code=202)
-async def retrain_model(
-    background_tasks: BackgroundTasks,
+async def retrain(
+    background_tasks: BackgroundTasks, 
     user: dict = Depends(get_admin_user)
-):
-    """
-    Starts the model retraining process in the background. 
-    Requires admin.
-    """
-    def run_retraining():
+    ):
+    """Trigger full DVC pipeline retraining"""
+
+    def run_dvc_pipeline():
         try:
-            logger.info("Starting model retraining...")
+            logger.info("Start DVC pipeline: dvc repro --force")
             result = subprocess.run(
-                ["./retraining_run.sh"],
-                cwd=os.path.dirname(os.path.abspath(__file__)),
+                ["dvc", "repro", "--force"],
+                cwd="/app",  # path to the project in container
                 capture_output=True,
                 text=True
             )
             if result.returncode == 0:
-                logger.info("Retraining completed successfully")
+                logger.info("DVC pipeline successfully completed")
+                logger.info(result.stdout)
             else:
-                logger.error(f"Retraining failed: {result.stderr}")
+                logger.error("DVC pipeline terminated with an error")
+                logger.error(result.stderr)
         except Exception as e:
-            logger.error(f"Retraining error: {str(e)}")
+            logger.error(f"Error by starting DVC: {str(e)}")
 
-    background_tasks.add_task(run_retraining)
-    
+    background_tasks.add_task(run_dvc_pipeline)
     return {
-        "message": "Retraining process started in background",
+        "message": "DVC pipeline started in background",
         "status": "accepted"
     }

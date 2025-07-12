@@ -4,13 +4,11 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_db():
-    """Создаёт новое подключение к БД"""
     conn = sqlite3.connect("users.db")
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    """Инициализирует БД (вызывается при старте)"""
     db = get_db()
     try:
         db.execute("""
@@ -33,4 +31,4 @@ def init_db():
     finally:
         db.close()
 
-init_db()  # Вызываем при импорте
+init_db()

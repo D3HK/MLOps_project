@@ -1,4 +1,20 @@
 FROM python:3.9-slim
-RUN pip install mlflow
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl sqlite3 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip install mlflow psycopg2-binary
+
+RUN mkdir -p /mlruns && chmod -R a+rw /mlruns
+
 EXPOSE 5000
-CMD ["mlflow", "server", "--host", "0.0.0.0"]
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:5000 || exit 1
+
+CMD ["mlflow", "server", \
+    "--host", "0.0.0.0", \
+    "--backend-store-uri", "sqlite:///mlruns/mlflow.db", \
+    "--default-artifact-root", "file:///mlruns/artifacts", \
+    "--serve-artifacts"]
