@@ -50,9 +50,11 @@ services:
       - AIRFLOW__API__AUTH_BACKEND=airflow.api.auth.backend.basic_auth
 
     volumes:
-    - ./airflow/dags:/opt/airflow/dags
-    - ./airflow/logs:/opt/airflow/logs
-    - .:/opt/airflow/project:rw
+      - ./mlruns:/mlflow:rw
+      - ./airflow/db:/opt/airflow
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - .:/opt/airflow/project:rw
     ports:
       - "8080:8080"
     command: airflow standalone
