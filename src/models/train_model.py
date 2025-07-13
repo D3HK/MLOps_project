@@ -74,13 +74,6 @@ def log_to_mlflow(model, X_test, y_test, run):
     client.set_registered_model_tag("Accidents_RF_Model", "owner", "mlops-pipeline")
     client.set_registered_model_tag("Accidents_RF_Model", "type", "baseline")
 
-    client.set_registered_model_alias(
-        name="Accidents_RF_Model",
-        alias="champion",
-        version=result.version
-    )
-    logger.info(f"Model registred: version {result.version} → champion")
-
 
 def retrain():
     setup_logging()

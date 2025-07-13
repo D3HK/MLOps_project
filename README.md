@@ -1,26 +1,32 @@
 # MLOps Accidents Project
 
+## Project Repository
+All project files and source code are available on GitHub:  
+🔗 [https://github.com/D3HK/MLOps_project](https://github.com/D3HK/MLOps_project)
+
+---
+
 ## API Security Implementation  
 
-I've added security features to protect API. Here's what I did in simple terms:  
+I implemented security features to protect the API. Here's what I did:  
 
 ### **Authentication (Login Protection)**  
-- Users must log in with a **username/password** to get a special key (JWT token)  
-- Without this key, you can't access private parts of the API  
-- Passwords are stored as secret codes (hashed) - nobody can see the real passwords  
+- Added username/password login to get JWT tokens  
+- Without a valid token, private API endpoints are inaccessible  
+- Passwords are securely hashed before storage  
 
 ### **Authorization (Access Control)**  
-- Two types of users:  
-  - **Admins** - can access everything (like updating models)  
-  - **Regular users** - limited access  
-- The API checks your permissions before allowing sensitive actions  
+- Created two user roles:  
+  - **Admins** - full access (including model updates)  
+  - **Regular users** - restricted access  
+- Implemented permission checks for sensitive operations  
 
 ### **Data Protection**  
-- All sensitive routes require a valid token  
-- Tokens expire after some time for safety  
-- Input data is checked to prevent errors or attacks  
+- All protected routes require valid tokens  
+- Tokens have expiration for security  
+- Added input validation to prevent attacks  
 
-### **How to Test It**  
+### **How to Test**  
 1. **Get a token**:  
    ```bash
    curl -X POST "http://localhost:8000/auth/token" \
@@ -37,46 +43,45 @@ I've added security features to protect API. Here's what I did in simple terms:
    ```
 
 ### **Key Features**  
-✔️ Only logged-in users can access the API  
-✔️ Admins have special privileges  
-✔️ Safe password storage  
-✔️ Automatic token expiration  
+✔️ Token-based authentication  
+✔️ Role-based access control  
+✔️ Secure password storage  
+✔️ Token expiration  
 
-For developers: Check the interactive docs at `http://localhost:8000/docs`!  
- 
+For developers: Interactive docs available at `http://localhost:8000/docs`  
+
 ---
 
 ## **Data & Model Versioning**  
-- Uses **DVC** to track all data and models  
-- Automatically saves changes to:  
+- Implemented DVC for tracking:  
   - Raw data (`data/raw/`)  
-  - Cleaned data (`data/preprocessed/`)  
+  - Processed data (`data/preprocessed/`)  
   - Trained models (`src/models/trained_model.joblib`)  
 
-### **Pipeline Steps**  
+### **Pipeline Structure**  
 ```bash
 dvc.yaml
-├── import_data    # Get data
-├── preprocess    # Clean and prepare data
-├── train         # Trains the ML model
-└── predict       # Makes test predictions
+├── import_data    # Data ingestion
+├── preprocess     # Data cleaning
+├── train          # Model training
+└── predict        # Predictions
 ```
+
 ---
 
-
-### **Automated Model Retraining**  
+## **Automated Model Retraining**  
 - Added `/retrain` endpoint (admin-only)  
-- Compares new vs production model metrics (AUC-ROC/F1)  
-- Updates production model only if quality improves by >1%  
+- Compares new model metrics (AUC-ROC/F1) with production  
+- Updates production model only if improvement >1%  
 
-### **Retraining Script**  
+### **Retraining Process**  
 ```bash
-./retraining_run.sh  # Runs: dvc repro evaluate
+./retraining_run.sh  # Executes: dvc repro evaluate
 ```  
-- Auto-creates `prod_model.joblib` on first run  
+- Creates `prod_model.joblib` on first run  
 - Can be triggered by:  
-  - Cron jobs (scheduled)  
-  - API calls (manual)  
+  - Scheduled jobs  
+  - API calls  
 
 ### **Pipeline Updates**  
 ```yaml
@@ -88,24 +93,10 @@ evaluate:
       - data/preprocessed/X_test.csv
       - data/preprocessed/y_test.csv
     outs:
-      - src/models/prod_model.joblib # Auto-updated
+      - src/models/prod_model.joblib
 ```  
 
-### **Security**  
-- Admin rights required for:  
-  - `/retrain`  
-
-
-### **Test it:**  
-
-**Get a token**:  
-   ```bash
-   curl -X POST "http://localhost:8000/auth/token" \
-        -d "username=admin&password=admin123" \
-        -H "Content-Type: application/x-www-form-urlencoded"
-   ```
-
-**Use the token** (replace `$TOKEN`):
+### **Test Commands**  
 ```bash 
 curl -X POST "http://localhost:8000/retrain" \
      -H "Authorization: Bearer $TOKEN"
@@ -113,16 +104,15 @@ curl -X POST "http://localhost:8000/retrain" \
 
 ---
 
-### **DVC Pipeline Dockerization**  
+## **DVC Pipeline Dockerization**  
 
-**What I did**:  
-✅ Integrated DVC into Docker containers  
-✅ Configured `docker-compose.yml` for DVC + API interaction  
-✅ Set up volumes for data/model synchronization  
-✅ Added API endpoint (`/retrain`) to trigger DVC pipeline  
-✅ Verified full pipeline execution inside containers  
+### **Implementation**  
+- Integrated DVC with Docker containers  
+- Configured `docker-compose.yml` for DVC-API interaction  
+- Set up shared volumes for data synchronization  
+- Added API endpoint for pipeline triggering  
 
-**How to test**:  
+### **Testing**  
 1. Start services:  
    ```bash  
    docker compose up -d  
@@ -131,96 +121,71 @@ curl -X POST "http://localhost:8000/retrain" \
    ```bash  
    docker compose exec api bash -c "cd /app && dvc status"  
    ```  
-3. Trigger retraining via API:  
+3. Trigger retraining:  
    ```bash  
-   curl -X POST http://localhost:8000/retrain -H "Authorization: Bearer TOKEN"  
+   curl -X POST http://localhost:8000/retrain -H "Authorization: Bearer $TOKEN"  
    ```  
 
-**Key files modified**:  
-- `docker-compose.yml` (DVC service + volumes)  
-- `Dockerfile` (DVC installation)    
+### **Modified Files**  
+- `docker-compose.yml`  
+- `Dockerfile`  
 
 ---
 
-## **MLflow Tracking & Dockerization**
+## **MLflow Tracking & Dockerization**  
 
-### **MLflow Configuration**
-- Tracks all experiments automatically in `./mlruns/`
-- Logs:
-  - Model parameters
-  - Evaluation metrics (AUC)
-  - Model artifacts (`.joblib` files)
-- Access UI at: `http://localhost:5000`
+### **Setup**  
+- Automatic experiment tracking in `./mlruns/`  
+- Logs:  
+  - Model parameters  
+  - Evaluation metrics  
+  - Model artifacts  
 
-
-### **Test Commands**
+### **Testing**  
 ```bash
-# Start MLflow only
+# Start MLflow
 docker compose up -d mlflow
 
-# Trigger training (logs to MLflow)
+# Run training with logging
 docker compose run api dvc repro --force evaluate
 ```
- 
+
+Access UI at: `http://localhost:5000`  
+
 ---
 
 ## **Airflow Integration**  
 
-I added **Airflow** to automate and schedule ML pipelines. Here's what it does in simple terms:  
+### **Implementation**  
+- Automated pipeline scheduling  
+- Manual triggering capability  
+- Run history tracking  
 
-### **What Airflow Does**  
-- Runs ML pipelines **automatically** on a schedule  
-- Can also be triggered **manually** when needed  
-- Tracks all runs and errors  
-
-### **How to Use It**  
-
-#### **1. Manual Run**  
- - Run DAG from Airflow UI to start the pipeline immediately.
- - Call endpoint /retrain from API.
-
-
-#### **2. Scheduled Runs**  
-The pipeline will run:   
-- You can change the schedule in:  
-  ```bash
-  airflow/dags/dvc_pipeline.py
-  ``` 
-
-### **How to Access**  
+### **Usage**  
 1. Start Airflow:  
    ```bash
    docker compose up -d airflow
    ```
-2. Open Airflow UI:  
+2. Access UI:  
    ```
    http://localhost:8080
    ```
-   Login: `admin` / `admin`  
+   Credentials: `admin` / `admin`  
 
-### If you have problem logging in, run these 2 commands:
-  ```bash
-  # 1. delete the user admin
-  docker compose exec airflow airflow users delete -u admin
+### **Troubleshooting**  
+```bash
+# Reset admin user if needed
+docker compose exec airflow airflow users delete -u admin
+docker compose exec airflow airflow users create \
+  --username admin \
+  --password admin \
+  --firstname Admin \
+  --lastname User \
+  --role Admin \
+  --email admin@example.com
+```
 
-  # 2. create the user admin with new password
-  docker compose exec airflow airflow users create \
-    --username admin \
-    --password admin \ # ⚠️ or use own - strongly recommended!
-    --firstname Admin \
-    --lastname User \
-    --role Admin \
-    --email admin@example.com
-  ```
-
-
-### **What Was Added**  
-1. **Airflow setup** with Docker  
-2. **DAG file** (`dvc_pipeline.py`) that runs: 
-   - Data loading 
-   - Data preprocessing  
-   - Model training  
-   - Evaluation  
-3. **Two ways to run**:  
-   - By schedule (auto)  
-   - By API call or UI (manual) 
+### **Features**  
+- Scheduled pipeline execution  
+- Manual triggering via UI or API  
+- Complete DVC pipeline integration
