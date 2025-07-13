@@ -7,6 +7,9 @@ import os
 import numpy as np
 import subprocess
 import logging
+import requests
+import time
+
 from dotenv import load_dotenv
 from fastapi.security import OAuth2PasswordBearer
 from auth.dependencies import get_current_user, get_admin_user
@@ -97,32 +100,34 @@ async def predict(
 
 
 @app.post("/retrain", status_code=202)
-async def retrain(
-    background_tasks: BackgroundTasks, 
-    user: dict = Depends(get_admin_user)
-    ):
-    """Trigger full DVC pipeline retraining"""
+async def retrain(background_tasks: BackgroundTasks, user: dict = Depends(get_admin_user)):
+    """
+    Trigger Airflow DAG for retraining pipeline
+    """
+    def trigger_airflow_dag():
+        airflow_url = os.getenv("AIRFLOW_API_URL")
+        airflow_user = os.getenv("AIRFLOW_API_USER")
+        airflow_pass = os.getenv("AIRFLOW_API_PASS")
 
-    def run_dvc_pipeline():
-        try:
-            logger.info("Start DVC pipeline: dvc repro --force")
-            result = subprocess.run(
-                ["dvc", "repro", "--force"],
-                cwd="/app",  # path to the project in container
-                capture_output=True,
-                text=True
-            )
-            if result.returncode == 0:
-                logger.info("DVC pipeline successfully completed")
-                logger.info(result.stdout)
-            else:
-                logger.error("DVC pipeline terminated with an error")
-                logger.error(result.stderr)
-        except Exception as e:
-            logger.error(f"Error by starting DVC: {str(e)}")
+        dag_id = "dvc_pipeline"
+        endpoint = f"{airflow_url}/dags/{dag_id}/dagRuns"
+        payload = {
+            "dag_run_id": f"manual_trigger_{int(time.time())}"
+        }
 
-    background_tasks.add_task(run_dvc_pipeline)
+        logger.info(f"Triggering DAG {dag_id} at {endpoint}")
+
+        response = requests.post(endpoint, json=payload, auth=(airflow_user, airflow_pass))
+
+        if not response.ok:
+            logger.error(f"Failed to trigger DAG: {response.status_code} {response.text}")
+            raise HTTPException(status_code=500, detail="Failed to trigger DAG")
+
+        logger.info("DAG triggered successfully")
+
+    background_tasks.add_task(trigger_airflow_dag)
+
     return {
-        "message": "DVC pipeline started in background",
+        "message": "Airflow retraining pipeline triggered",
         "status": "accepted"
     }

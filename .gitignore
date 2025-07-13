@@ -93,3 +93,14 @@ target/
 *.joblib.dvc/tmp/credentials.json
 
 mlruns/
+
+# Model files
+models/*.joblib
+models/random_forest.joblib
+models/trained_model.joblib
+!models/.gitkeep
+
+airflow/logs/
+airflow/*.db
+airflow/db/
+

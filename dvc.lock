@@ -35,24 +35,33 @@ stages:
       md5: 83061f3f8b1b8fcaf00638d1c89fae7d
       size: 32825
   train:
-    cmd: MLFLOW_TRACKING_URI=http://mlflow:5000 
-      MLFLOW_EXPERIMENT_NAME=Accidents_Prediction python 
-      src/models/train_model.py
+    cmd: python src/models/train_model.py
     deps:
-    - path: data/preprocessed
+    - path: data/preprocessed/X_test.csv
       hash: md5
-      md5: 34b7b7a80c1b5d66d86e05a7978b83e9.dir
-      size: 5882269
-      nfiles: 4
+      md5: 984b7f6c56e32ae00e0533e1f3fd6e59
+      size: 1732263
+    - path: data/preprocessed/X_train.csv
+      hash: md5
+      md5: 6d44bdbd3da74801a34d3947b412bd71
+      size: 4040600
+    - path: data/preprocessed/y_test.csv
+      hash: md5
+      md5: 83061f3f8b1b8fcaf00638d1c89fae7d
+      size: 32825
+    - path: data/preprocessed/y_train.csv
+      hash: md5
+      md5: 4201106fa338c961187a0653ac139046
+      size: 76581
     - path: src/models/train_model.py
       hash: md5
-      md5: 098cf99b1b6abcb546f335f22010e6cd
-      size: 2725
+      md5: 6abcf32a87fe110822f5d1874a16d882
+      size: 3071
     outs:
     - path: src/models/trained_model.joblib
       hash: md5
-      md5: 865b3496eed44020c89189c4db0b0bad
-      size: 106824009
+      md5: 014b72711e79065cd351c648963a8c17
+      size: 186881
   predict:
     cmd: python src/models/predict_model.py src/models/test_features.json
     deps:
@@ -81,10 +90,10 @@ stages:
       size: 32825
     - path: src/models/trained_model.joblib
       hash: md5
-      md5: 865b3496eed44020c89189c4db0b0bad
-      size: 106824009
+      md5: 014b72711e79065cd351c648963a8c17
+      size: 186881
     outs:
     - path: src/models/prod_model.joblib
       hash: md5
-      md5: 865b3496eed44020c89189c4db0b0bad
-      size: 106824009
+      md5: 014b72711e79065cd351c648963a8c17
+      size: 186881

@@ -36,3 +36,25 @@ services:
       mlflow:
         condition: service_healthy
     restart: unless-stopped
+
+  airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+      - AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=false
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__API__AUTH_BACKEND=airflow.api.auth.backend.basic_auth
+
+    volumes:
+      - ./mlruns:/mlflow:rw
+      - ./airflow/db:/opt/airflow
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - .:/opt/airflow/project:rw
+    ports:
+      - "8080:8080"
+    command: airflow standalone

@@ -94,7 +94,7 @@ def retrain():
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
 
-    save_model_locally(model, Path("models/random_forest.joblib"))
+    save_model_locally(model, Path("src/models/trained_model.joblib"))
 
     mlflow.set_tracking_uri("http://mlflow:5000")
     mlflow.set_experiment("Accidents_Prediction")
