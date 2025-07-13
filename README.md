@@ -161,3 +161,66 @@ docker compose up -d mlflow
 # Trigger training (logs to MLflow)
 docker compose run api dvc repro --force evaluate
 ```
+ 
+---
+
+## **Airflow Integration**  
+
+I added **Airflow** to automate and schedule ML pipelines. Here's what it does in simple terms:  
+
+### **What Airflow Does**  
+- Runs ML pipelines **automatically** on a schedule  
+- Can also be triggered **manually** when needed  
+- Tracks all runs and errors  
+
+### **How to Use It**  
+
+#### **1. Manual Run**  
+ - Run DAG from Airflow UI to start the pipeline immediately.
+ - Call endpoint /retrain from API.
+
+
+#### **2. Scheduled Runs**  
+The pipeline will run:   
+- You can change the schedule in:  
+  ```bash
+  airflow/dags/dvc_pipeline.py
+  ``` 
+
+### **How to Access**  
+1. Start Airflow:  
+   ```bash
+   docker compose up -d airflow
+   ```
+2. Open Airflow UI:  
+   ```
+   http://localhost:8080
+   ```
+   Login: `admin` / `admin`  
+
+### If you have problem logging in, run these 2 commands:
+  ```bash
+  # 1. delete the user admin
+  docker compose exec airflow airflow users delete -u admin
+
+  # 2. create the user admin with new password
+  docker compose exec airflow airflow users create \
+    --username admin \
+    --password admin \ # ⚠️ or use own - strongly recommended!
+    --firstname Admin \
+    --lastname User \
+    --role Admin \
+    --email admin@example.com
+  ```
+
+
+### **What Was Added**  
+1. **Airflow setup** with Docker  
+2. **DAG file** (`dvc_pipeline.py`) that runs: 
+   - Data loading 
+   - Data preprocessing  
+   - Model training  
+   - Evaluation  
+3. **Two ways to run**:  
+   - By schedule (auto)  
+   - By API call or UI (manual) 
