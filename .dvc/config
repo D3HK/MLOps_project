@@ -1,5 +1,7 @@
 [core]
     remote = myremote
     no_scm = true
+cache]
+    dir = /tmp/dvc_cache
 ['remote "myremote"']
     url = ../../dvc_storage

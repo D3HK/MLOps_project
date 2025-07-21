@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src/data/import_raw_data.py
       hash: md5
-      md5: db8976c130248cfa2822e3d558d3415b
-      size: 1949
+      md5: 8797bc5a68af1264553b646b97a99166
+      size: 1905
     outs:
     - path: data/raw/
       hash: md5
@@ -55,7 +55,7 @@ stages:
       size: 76581
     - path: src/models/train_model.py
       hash: md5
-      md5: 6cc190e77ea042f3fbde5d045ee933e9
+      md5: abe0c4ae606c48a73ecae59e9fbc60a5
       size: 2857
     outs:
     - path: src/models/trained_model.joblib
