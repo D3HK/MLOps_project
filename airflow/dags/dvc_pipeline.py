@@ -11,19 +11,30 @@ with DAG(
 ) as dag:
 
     import_data = BashOperator(
-        task_id="import_data",
-        bash_command="cd /opt/airflow/project && dvc repro import_data",
+    task_id='import_data',
+    bash_command='cd /opt/airflow/project && dvc repro --no-commit import_data'
     )
 
     preprocess = BashOperator(
-        task_id="preprocess",
-        bash_command="cd /opt/airflow/project && dvc repro preprocess",
-    )
+    task_id='preprocess',
+    bash_command='''
+    cd /opt/airflow/project && \
+    mkdir -p /tmp/dvc_cache && \
+    dvc config cache.dir /tmp/dvc_cache && \
+    dvc repro --no-commit preprocess
+    ''',
+    dag=dag
+)
 
     train = BashOperator(
-        task_id="train",
-        bash_command="cd /opt/airflow/project && dvc repro train --force",
-    )
+    task_id='train',
+    bash_command='''
+    cd /opt/airflow/project && \
+    export MLFLOW_ARTIFACT_ROOT=/tmp/mlflow && \
+    dvc repro train --force
+    ''',
+    dag=dag
+)
 
     evaluate = BashOperator(
         task_id="evaluate",

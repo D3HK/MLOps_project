@@ -9,6 +9,7 @@ import subprocess
 import logging
 import requests
 import time
+import base64
 
 from dotenv import load_dotenv
 from fastapi.security import OAuth2PasswordBearer
@@ -18,13 +19,38 @@ from auth.utils import create_access_token
 from mlflow.exceptions import MlflowException
 from src.models.train_model import retrain
 
-load_dotenv()
+import logging
+from fastapi import Request
+
 
 app = FastAPI(
     title="Accidents Prediction API",
     description="API for predicting accidents and managing models",
     swagger_ui_parameters={"defaultModelsExpandDepth": -1}
 )
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('api.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Request: {request.method} {request.url}")
+    try:
+        response = await call_next(request)
+        logger.info(f"Response: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise
+
+load_dotenv()
 
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
 mlflow.set_registry_uri(os.getenv("MLFLOW_REGISTRY_URI", "http://mlflow:5000"))
@@ -75,7 +101,7 @@ async def login(
     password: str = Form(...)
 ):
     """Generate access token for authenticated users"""
-    if username == "admin" and password == "admin123":
+    if username == os.getenv("ADMIN_USERNAME") and password == os.getenv("ADMIN_PASSWORD"):
         token = create_access_token({"sub": "admin", "role": "admin"})
         return {"access_token": token, "token_type": "bearer"}
     raise HTTPException(status_code=400, detail="Wrong login/password")
@@ -86,6 +112,7 @@ async def predict(
     request: PredictionRequest,
     user: dict = Depends(get_admin_user)
     ):
+    logger.info(f"Predict request with features: {request.features}")
     """Make predictions using the trained model"""
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
@@ -99,35 +126,40 @@ async def predict(
         raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
 
 
-@app.post("/retrain", status_code=202)
-async def retrain(background_tasks: BackgroundTasks, user: dict = Depends(get_admin_user)):
+@app.post("/retrain")
+async def retrain(user: dict = Depends(get_admin_user)):
     """
-    Trigger Airflow DAG for retraining pipeline
+    Starts DAG dvc_pipeline в Airflow and returns the status
     """
-    def trigger_airflow_dag():
-        airflow_url = os.getenv("AIRFLOW_API_URL")
-        airflow_user = os.getenv("AIRFLOW_API_USER")
-        airflow_pass = os.getenv("AIRFLOW_API_PASS")
+    def trigger_dag():
+        try:
+            airflow_url = "http://airflow-webserver:8080/api/v1/dags/dvc_pipeline/dagRuns"
+            auth = (os.getenv("AIRFLOW_API_USER"), 
+                   os.getenv("AIRFLOW_API_PASS"))
+            
+            response = requests.post(
+                airflow_url,
+                json={
+                    "dag_run_id": f"manual_run_{int(time.time())}",
+                    "conf": {}
+                },
+                auth=auth,
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Airflow API error: {str(e)}")
+            raise
 
-        dag_id = "dvc_pipeline"
-        endpoint = f"{airflow_url}/dags/{dag_id}/dagRuns"
-        payload = {
-            "dag_run_id": f"manual_trigger_{int(time.time())}"
+    try:
+        result = trigger_dag()
+        return {
+            "status": "success",
+            "dag_run_id": result.get("dag_run_id"),
+            "airflow_response": result
         }
-
-        logger.info(f"Triggering DAG {dag_id} at {endpoint}")
-
-        response = requests.post(endpoint, json=payload, auth=(airflow_user, airflow_pass))
-
-        if not response.ok:
-            logger.error(f"Failed to trigger DAG: {response.status_code} {response.text}")
-            raise HTTPException(status_code=500, detail="Failed to trigger DAG")
-
-        logger.info("DAG triggered successfully")
-
-    background_tasks.add_task(trigger_airflow_dag)
-
-    return {
-        "message": "Airflow retraining pipeline triggered",
-        "status": "accepted"
-    }
+    except Exception as e:
+        logger.exception("Failed to trigger DAG")
+        raise HTTPException(500, detail=str(e))
