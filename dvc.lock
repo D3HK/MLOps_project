@@ -55,13 +55,13 @@ stages:
       size: 76581
     - path: src/models/train_model.py
       hash: md5
-      md5: abe0c4ae606c48a73ecae59e9fbc60a5
-      size: 2857
+      md5: 63b47b5c62ace71be87e5646506b4c80
+      size: 3021
     outs:
     - path: src/models/trained_model.joblib
       hash: md5
-      md5: 014b72711e79065cd351c648963a8c17
-      size: 186881
+      md5: 1ab8c7399b09deda6ab48e8247534583
+      size: 107147161
   predict:
     cmd: python src/models/predict_model.py src/models/test_features.json
     deps:
@@ -90,10 +90,10 @@ stages:
       size: 32825
     - path: src/models/trained_model.joblib
       hash: md5
-      md5: 014b72711e79065cd351c648963a8c17
-      size: 186881
+      md5: 1ab8c7399b09deda6ab48e8247534583
+      size: 107147161
     outs:
     - path: src/models/prod_model.joblib
       hash: md5
-      md5: 014b72711e79065cd351c648963a8c17
-      size: 186881
+      md5: 1ab8c7399b09deda6ab48e8247534583
+      size: 107147161

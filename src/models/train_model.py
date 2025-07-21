@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import joblib
@@ -8,7 +9,6 @@ from pathlib import Path
 import logging
 import sys
 import shutil
-from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
@@ -79,10 +79,12 @@ def retrain():
     setup_logging()
     logger.info("Start training")
 
-    data = load_iris()
-    X_train, X_test, y_train, y_test = train_test_split(
-        data.data, data.target, test_size=0.2, random_state=42
-    )
+    X_train = pd.read_csv('data/preprocessed/X_train.csv')
+    X_test = pd.read_csv('data/preprocessed/X_test.csv')
+    y_train = pd.read_csv('data/preprocessed/y_train.csv')
+    y_test = pd.read_csv('data/preprocessed/y_test.csv')
+    y_train = np.ravel(y_train)
+    y_test = np.ravel(y_test)
 
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
