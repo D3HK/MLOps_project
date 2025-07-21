@@ -2,12 +2,10 @@ FROM apache/airflow:2.7.1
 
 USER root
 
-# Создаем все необходимые папки и устанавливаем права
 RUN mkdir -p /opt/airflow/logs/{scheduler,webserver,dag_processor_manager} && \
     chown -R airflow:root /opt/airflow && \
     chmod -R 775 /opt/airflow/logs
 
-# Установка зависимостей
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
@@ -16,7 +14,6 @@ RUN apt-get update && \
 
 USER airflow
 
-# Установка Python-пакетов
 RUN pip install --no-cache-dir --user \
     mlflow==2.9.2 \
     pydantic==1.10.13 \
