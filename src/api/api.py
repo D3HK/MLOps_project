@@ -63,26 +63,26 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 logging.basicConfig(filename='retrain.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 # Load the model at startup
-
-# def load_model():
-#     model_path = os.path.join(os.path.dirname(__file__), "src/models/trained_model.joblib")
-#     return joblib.load(model_path)
-
 def load_model():
     try:
+        # Пробуем загрузить из MLflow
         mlflow_model = mlflow.pyfunc.load_model("models:/Accidents_RF_Model@champion")
         sklearn_model = mlflow_model._model_impl.python_model.model
         sklearn_model.feature_names_in_ = mlflow_model.metadata.get_input_schema().input_names()
         return sklearn_model
     except Exception as e:
-        logger.warning(f"MLflow loading failed: {str(e)}")
+        logger.error(f"MLflow load failed: {str(e)}")
         try:
-            model_path = os.path.join(os.path.dirname(__file__), "src/models/prod_model.joblib")
-            return joblib.load(model_path)
+            # Локальный fallback
+            model = joblib.load("src/models/prod_model.joblib")
+            if not hasattr(model, 'feature_names_in_') and hasattr(model, 'feature_names'):
+                model.feature_names_in_ = model.feature_names
+            return model
         except Exception as e:
-            logger.critical(f"All model loading attempts failed: {str(e)}")
-            raise
+            logger.critical(f"Local model load failed: {str(e)}")
+            return None
 
 # Global model variable
 try:
