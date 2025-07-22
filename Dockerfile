@@ -18,21 +18,22 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-COPY api.py .
-COPY src/models/ src/models/
-COPY src/data/ src/data/
+# Копируем всю структуру проекта
+COPY src/ ./src/
+COPY auth/ ./auth/
 COPY dvc.yaml .
-COPY auth/ auth/
-COPY database.py .
 
 RUN mkdir -p /app/data/preprocessed
 
-# Очистка кеша и pycache (добавлено в существующий RUN)
+# Очистка кеша
 RUN find /usr/local -type d -name '__pycache__' -exec rm -rf {} + && \
-    find /usr/local -name '*.pyc' -delete
+    find /usr/local -name '*.pyc' -delete && \
+    find /app -type d -name '__pycache__' -exec rm -rf {} + && \
+    find /app -name '*.pyc' -delete
 
-ENV PYTHONPATH=/app \
+# Указываем PYTHONPATH с учетом новой структуры
+ENV PYTHONPATH=/app:/app/src:/app/auth \
     MLFLOW_TRACKING_URI=http://mlflow:5000 \
     PYTHONUNBUFFERED=1
 
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

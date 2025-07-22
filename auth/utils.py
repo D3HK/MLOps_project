@@ -2,7 +2,7 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 import os
-from database import get_db
+from src.database.database import get_db
 from fastapi import HTTPException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
