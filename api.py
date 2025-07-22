@@ -5,6 +5,7 @@ from typing import List
 import joblib
 import os
 import numpy as np
+import pandas as pd
 import subprocess
 import logging
 import requests
@@ -63,23 +64,27 @@ logging.basicConfig(filename='retrain.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load the model at startup
+
+# def load_model():
+#     model_path = os.path.join(os.path.dirname(__file__), "src/models/trained_model.joblib")
+#     return joblib.load(model_path)
+
 def load_model():
     try:
-        # Try to load from MLflow Registry
-        return mlflow.pyfunc.load_model("models:/Accidents_RF_Model@champion")
-    except MlflowException as e:
-        logger.warning(f"MLflow model loading failed: {str(e)}")
+        mlflow_model = mlflow.pyfunc.load_model("models:/Accidents_RF_Model@champion")
+        sklearn_model = mlflow_model._model_impl.python_model.model
+        sklearn_model.feature_names_in_ = mlflow_model.metadata.get_input_schema().input_names()
+        return sklearn_model
+    except Exception as e:
+        logger.warning(f"MLflow loading failed: {str(e)}")
         try:
-            # Fallback to local model
             model_path = os.path.join(os.path.dirname(__file__), "src/models/prod_model.joblib")
-            if not os.path.exists(model_path):
-                raise FileNotFoundError(f"Model file not found at {model_path}")
             return joblib.load(model_path)
         except Exception as e:
-            logger.error(f"Local model loading failed: {str(e)}")
+            logger.critical(f"All model loading attempts failed: {str(e)}")
             raise
 
-# Global model variable (can be replaced by cache or dependency)
+# Global model variable
 try:
     model = load_model()
 except Exception as e:
@@ -110,20 +115,19 @@ async def login(
 @app.post("/predict")
 async def predict(
     request: PredictionRequest,
-    user: dict = Depends(get_admin_user)
-    ):
-    logger.info(f"Predict request with features: {request.features}")
-    """Make predictions using the trained model"""
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
+    user: dict = Depends(get_admin_user)  # Добавляем проверку авторизации
+):
+    """Make prediction (Admin only)"""
     try:
-        features = np.array(request.features).reshape(1, -1)
-        prediction = model.predict(features)
-        return {"prediction": prediction.tolist()[0]}
+        features_df = pd.DataFrame(
+            [request.features],
+            columns=model.feature_names_in_
+        )
+        prediction = model.predict(features_df)
+        return {"prediction": int(prediction[0])}
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
+        raise HTTPException(400, detail=str(e))
 
 
 @app.post("/retrain")
