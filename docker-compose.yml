@@ -79,7 +79,7 @@ services:
       - ./airflow/airflow.db:/opt/airflow/airflow.db
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/plugins:/opt/airflow/plugins
-      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/logs:/opt/airflow/logs:z
       - .:/opt/airflow/project:z
       - ./data:/opt/airflow/project/data:rw
       - ./.dvc:/opt/airflow/project/.dvc:rw

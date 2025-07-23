@@ -59,28 +59,43 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         logger.error(f"Password verification failed: {str(e)}")
         return False
 
+class DummyModel:
+    def predict(self, X):
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail="Model is not loaded yet."
+        )
+
 def load_model():
     try:
         mlflow_model = mlflow.pyfunc.load_model("models:/Accidents_RF_Model@champion")
         sklearn_model = mlflow_model._model_impl.python_model.model
         sklearn_model.feature_names_in_ = mlflow_model.metadata.get_input_schema().input_names()
+        logger.info("MLflow model loaded successfully")
         return sklearn_model
     except Exception as e:
         logger.error(f"MLflow load failed: {str(e)}")
-        try:
-            model = joblib.load("src/models/prod_model.joblib")
-            if not hasattr(model, 'feature_names_in_') and hasattr(model, 'feature_names'):
-                model.feature_names_in_ = model.feature_names
-            return model
-        except Exception as e:
-            logger.critical(f"Local model load failed: {str(e)}")
-            return None
+
+    local_model_path = "src/models/prod_model.joblib"
+    try:
+        model = joblib.load(local_model_path)
+        if not hasattr(model, 'feature_names_in_') and hasattr(model, 'feature_names'):
+            model.feature_names_in_ = model.feature_names
+        logger.info("Local model loaded successfully")
+        return model
+    except Exception as e:
+        logger.error(f"Local model load failed: {str(e)}")
+
+    logger.error("No model available! Using placeholder. Training required.")
+    return DummyModel()
+
 
 try:
     model = load_model()
 except Exception as e:
     logger.critical(f"Failed to load model: {str(e)}")
     model = None
+    
 
 class PredictionRequest(BaseModel):
     features: List[float]
