@@ -58,35 +58,31 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception as e:
         logger.error(f"Password verification failed: {str(e)}")
         return False
+        
 
 class DummyModel:
     def predict(self, X):
         raise HTTPException(
             status_code=503,
-            detail="Service Unavailable: Model not loaded. Please retrain first."
+            detail="Prediction service unavailable: Model not loaded. Please train the model first using /retrain endpoint"
         )
 
 def load_model():
     try:
         mlflow_model = mlflow.pyfunc.load_model("models:/Accidents_RF_Model@champion")
-        sklearn_model = mlflow_model._model_impl.python_model.model
-        sklearn_model.feature_names_in_ = mlflow_model.metadata.get_input_schema().input_names()
         logger.info("MLflow model loaded successfully")
-        return sklearn_model
+        return mlflow_model._model_impl.python_model.model
     except Exception as e:
         logger.error(f"MLflow load failed: {str(e)}")
 
-    local_model_path = "src/models/prod_model.joblib"
     try:
-        model = joblib.load(local_model_path)
-        if not hasattr(model, 'feature_names_in_') and hasattr(model, 'feature_names'):
-            model.feature_names_in_ = model.feature_names
+        model = joblib.load("src/models/prod_model.joblib")
         logger.info("Local model loaded successfully")
         return model
     except Exception as e:
         logger.error(f"Local model load failed: {str(e)}")
 
-    logger.error("No model available! Using placeholder. Training required.")
+    logger.error("No model available - using dummy fallback")
     return DummyModel()
 
 
