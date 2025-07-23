@@ -48,6 +48,16 @@ docker-compose up -d
 
 ---
 
+### **Password Hash Generation**  
+To create bcrypt hashes for API passwords:  
+```bash
+pip install passlib[bcrypt] && \  
+python -c "import bcrypt; print(bcrypt.hashpw(b'your_password_here', bcrypt.gensalt()).decode('utf-8'))"
+```  
+👉 Replace `your_password_here` before running. Save the output to `.env` as `ADMIN_PASSWORD_HASH`.  
+
+---
+
 ## API Security Implementation  
 
 I implemented security features to protect the API. Here's what I did:  
