@@ -6,6 +6,48 @@ All project files and source code are available on GitHub:
 
 ---
 
+## **Initial Setup: Folder Permissions & Database Configuration**
+
+Before starting the services, run these preparation commands to ensure proper permissions and database setup:
+
+### **1. Airflow Logs Setup**
+```bash
+# Clean and recreate logs directory
+sudo rm -rf /workspaces/MLOps_project/airflow/logs/scheduler
+mkdir -p /workspaces/MLOps_project/airflow/logs/scheduler
+
+# Set correct permissions
+sudo chown -R 1000:0 /workspaces/MLOps_project/airflow/logs
+sudo chmod -R 775 /workspaces/MLOps_project/airflow/logs
+```
+
+### **2. Database Initialization**
+```bash
+# Recreate SQLite database file
+sudo rm -rf /workspaces/MLOps_project/airflow/airflow.db
+touch /workspaces/MLOps_project/airflow/airflow.db
+
+# Set database permissions
+sudo chown 1000:0 /workspaces/MLOps_project/airflow/airflow.db
+sudo chmod 660 /workspaces/MLOps_project/airflow/airflow.db
+
+# Initialize database
+docker-compose up -d airflow-webserver
+docker-compose exec airflow-webserver airflow db init
+```
+
+### **3. Start All Services**
+```bash
+docker-compose up -d
+```
+
+### **4. Key Ports**
+- **MLflow UI**: `http://localhost:5000`
+- **API Docs**: `http://localhost:8000/docs` 
+- **Airflow UI**: `http://localhost:8080`
+
+---
+
 ## API Security Implementation  
 
 I implemented security features to protect the API. Here's what I did:  
