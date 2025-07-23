@@ -62,8 +62,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 class DummyModel:
     def predict(self, X):
         raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail="Model is not loaded yet."
+            status_code=503,
+            detail="Service Unavailable: Model not loaded. Please retrain first."
         )
 
 def load_model():
