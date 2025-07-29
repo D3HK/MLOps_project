@@ -46,6 +46,18 @@ docker-compose up -d
 - **API Docs**: `http://localhost:8000/docs` 
 - **Airflow UI**: `http://localhost:8080`
 
+
+### **5. Set MLflow Artifacts Directory permissions**
+```bash
+# Recursively set permissions for mlruns folder
+sudo chmod -R 775 /workspaces/MLOps_project/mlruns
+
+# Set specific permissions for MLflow database file
+sudo chmod 664 /workspaces/MLOps_project/mlruns/mlflow.db
+
+# Verify
+ls -la /workspaces/MLOps_project/mlruns
+```
 ---
 
 ### **Password Hash Generation**  
